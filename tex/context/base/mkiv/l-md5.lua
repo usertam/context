@@ -20,7 +20,7 @@ end
 
 local md5, file = md5, file
 local gsub = string.gsub
-local modification, isfile, touch = lfs.modification, lfs.isfile, lfs.touch
+local isfile, touch = lfs.isfile, lfs.touch
 local loaddata, savedata = io.loaddata, io.savedata
 
 -- local gsub, format, byte = string.gsub, string.format, string.byte
@@ -60,31 +60,10 @@ end
 local md5HEX = md5.HEX
 
 function file.needsupdating(oldname,newname,threshold) -- size modification access change
-    local oldtime = modification(oldname)
-    if oldtime then
-        local newtime = modification(newname)
-        if not newtime then
-            return true -- no new file, so no updating needed
-        elseif newtime >= oldtime then
-            return false -- new file definitely needs updating
-        elseif oldtime - newtime < (threshold or 1) then
-            return false -- new file is probably still okay
-        else
-            return true -- new file has to be updated
-        end
-    else
-        return false -- no old file, so no updating needed
-    end
+    return false
 end
 
 file.needs_updating = file.needsupdating
-
-function file.syncmtimes(oldname,newname)
-    local oldtime = modification(oldname)
-    if oldtime and isfile(newname) then
-        touch(newname,oldtime,oldtime)
-    end
-end
 
 local function checksum(name)
     if md5 then

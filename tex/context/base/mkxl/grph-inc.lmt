@@ -55,7 +55,7 @@ local todimen = string.todimen
 local collapsepath = file.collapsepath
 local formatters = string.formatters
 local odd = math.odd
-local isfile, isdir, modificationtime = lfs.isfile, lfs.isdir, lfs.modification
+local isfile, isdir = lfs.isfile, lfs.isdir
 
 local P, R, S, Cc, C, Cs, Ct, lpegmatch = lpeg.P, lpeg.R, lpeg.S, lpeg.Cc, lpeg.C, lpeg.Cs, lpeg.Ct, lpeg.match
 
@@ -902,17 +902,8 @@ local function register(askedname,specification)
                 local newname = file.join(newpath,newbase)
                 oldname = collapsepath(oldname)
                 newname = collapsepath(newname)
-                local oldtime = modificationtime(oldname) or 0
-                local newtime = modificationtime(newname) or 0
-                if newtime == 0 or oldtime > newtime then
-                    if trace_conversion then
-                        report_inclusion("converting %a (%a) from %a to %a",askedname,oldname,format,newformat)
-                    end
-                    converter(oldname,newname,resolution or "", arguments or "",specification) -- in retrospect a table
-                else
-                    if trace_conversion then
-                        report_inclusion("no need to convert %a (%a) from %a to %a",askedname,oldname,format,newformat)
-                    end
+                if trace_conversion then
+                    report_inclusion("no need to convert %a (%a) from %a to %a",askedname,oldname,format,newformat)
                 end
                 if io.exists(newname) and io.size(newname) > 0 then
                     specification.foundname = oldname

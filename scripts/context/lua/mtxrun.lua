@@ -4336,9 +4336,6 @@ function lfs.isfound(name)
   return (a=="file" or a=="link") and name or nil
  end
 end
-function lfs.modification(name)
- return name and attributes(name,"modification") or nil
-end
 if sandbox then
  sandbox.redefine(lfs.isfile,"lfs.isfile")
  sandbox.redefine(lfs.isdir,"lfs.isdir")
@@ -4751,7 +4748,7 @@ if not md5 then
 end
 local md5,file=md5,file
 local gsub=string.gsub
-local modification,isfile,touch=lfs.modification,lfs.isfile,lfs.touch
+local isfile,touch=lfs.isfile,lfs.touch
 local loaddata,savedata=io.loaddata,io.savedata
 do
  local patterns=lpeg and lpeg.patterns
@@ -4770,29 +4767,9 @@ do
 end
 local md5HEX=md5.HEX
 function file.needsupdating(oldname,newname,threshold) 
- local oldtime=modification(oldname)
- if oldtime then
-  local newtime=modification(newname)
-  if not newtime then
-   return true 
-  elseif newtime>=oldtime then
-   return false 
-  elseif oldtime-newtime<(threshold or 1) then
-   return false 
-  else
-   return true 
-  end
- else
-  return false 
- end
+ return false
 end
 file.needs_updating=file.needsupdating
-function file.syncmtimes(oldname,newname)
- local oldtime=modification(oldname)
- if oldtime and isfile(newname) then
-  touch(newname,oldtime,oldtime)
- end
-end
 local function checksum(name)
  if md5 then
   local data=loaddata(name)
@@ -25089,7 +25066,7 @@ local function fetch(specification)
  local cachename=caches.setfirstwritablefile(cleanname,"schemes")
  if not cached[original] then
   statistics.starttiming(schemes)
-  if not io.exists(cachename) or (os.difftime(os.time(),lfs.attributes(cachename).modification)>(thresholds[protocol] or threshold)) then
+  if not io.exists(cachename) then
    cached[original]=cachename
    local handler=handlers[scheme]
    if handler then

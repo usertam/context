@@ -91,7 +91,7 @@ local function fetch(specification)
     local cachename = caches.setfirstwritablefile(cleanname,"schemes")
     if not cached[original] then
         statistics.starttiming(schemes)
-        if not io.exists(cachename) or (os.difftime(os.time(),lfs.attributes(cachename).modification) > (thresholds[protocol] or threshold)) then
+        if not io.exists(cachename) then
             cached[original] = cachename
             local handler = handlers[scheme]
             if handler then

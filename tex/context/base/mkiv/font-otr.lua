@@ -165,11 +165,6 @@ end)
 -- date represented in number of seconds since 12:00 midnight, January 1, 1904. The value is represented as a
 -- signed 64-bit integer
 
-local function readlongdatetime(f)
-    local a, b, c, d, e, f, g, h = readbytes(f,8)
-    return 0x100000000 * d + 0x1000000 * e + 0x10000 * f + 0x100 * g + h
-end
-
 local tableversion    = 0.004
 readers.tableversion  = tableversion
 local privateoffset   = fonts.constructors and fonts.constructors.privateoffset or 0xF0000 -- 0x10FFFF
@@ -1045,8 +1040,6 @@ readers.head = function(f,fontdata)
             magic             = readulong(f),
             flags             = readushort(f),
             units             = readushort(f),
-            created           = readlongdatetime(f),
-            modified          = readlongdatetime(f),
             xmin              = readshort(f),
             ymin              = readshort(f),
             xmax              = readshort(f),
@@ -2032,11 +2025,9 @@ local function loadtables(f,specification,offset)
     local tables   = { }
     local basename = file.basename(specification.filename)
     local filesize = specification.filesize
-    local filetime = specification.filetime
     local fontdata = { -- some can/will go
         filename      = basename,
         filesize      = filesize,
-        filetime      = filetime,
         version       = readstring(f,4),
         noftables     = readushort(f),
         searchrange   = readushort(f), -- not needed
@@ -2241,7 +2232,6 @@ local function loadfontdata(specification)
     local filename = specification.filename
     local fileattr = lfs.attributes(filename)
     local filesize = fileattr and fileattr.size or 0
-    local filetime = fileattr and fileattr.modification or 0
     local f = openfile(filename,true) -- zero based
     if not f then
         report("unable to open %a",filename)
@@ -2250,7 +2240,6 @@ local function loadfontdata(specification)
         closefile(f)
     else
         specification.filesize = filesize
-        specification.filetime = filetime
         local version  = readstring(f,4)
         local fontdata = nil
         if version == "OTTO" or version == "true" or version == "\0\1\0\0" then
@@ -2286,7 +2275,6 @@ local function loadfontdata(specification)
                     fontdata = {
                         filename    = filename,
                         filesize    = filesize,
-                        filetime    = filetime,
                         version     = version,
                         subfonts    = subfonts,
                         ttcversion  = ttcversion,
@@ -2414,7 +2402,6 @@ function readers.loadfont(filename,n,instance)
             tableversion  = tableversion,
             creator       = "context mkiv",
             size          = fontdata.filesize,
-            time          = fontdata.filetime,
             glyphs        = fontdata.glyphs,
             descriptions  = fontdata.descriptions,
             format        = fontdata.format,

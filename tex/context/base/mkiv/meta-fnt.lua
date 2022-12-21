@@ -96,11 +96,10 @@ local function process(mpxformat,name,instances,scalefactor)
         scalefactor = scalefactor or 1
         instances = instances or metapost.fonts.instances or 1 -- maybe store in liost too
         local fontname = file.removesuffix(file.basename(name))
-        local modification = attributes.modification
         local filesize = attributes.size
         local hash = file.robustname(formatters["%s %05i %03i"](fontname,round(scalefactor*1000),instances))
         local lists = containers.read(mpfonts.cache,hash)
-        if not lists or lists.modification ~= modification or lists.filesize ~= filesize or lists.instances ~= instances or lists.scalefactor ~= scalefactor then
+        if not lists or lists.filesize ~= filesize or lists.instances ~= instances or lists.scalefactor ~= scalefactor then
             statistics.starttiming(flusher)
             local data = io.loaddata(filename)
             metapost.reset(mpxformat)
@@ -141,7 +140,6 @@ local function process(mpxformat,name,instances,scalefactor)
                 }
             end
             lists.version = metapost.variables.fontversion or "1.000"
-            lists.modification = modification
             lists.filesize = filesize
             lists.instances = instances
             lists.scalefactor = scalefactor

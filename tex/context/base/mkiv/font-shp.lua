@@ -165,7 +165,6 @@ local function loadoutlines(cache,filename,sub,instance)
     local kind = file.suffix(filename)
     local attr = lfs.attributes(filename)
     local size = attr and attr.size or 0
-    local time = attr and attr.modification or 0
     local sub  = tonumber(sub)
 
     -- fonts.formats
@@ -173,12 +172,11 @@ local function loadoutlines(cache,filename,sub,instance)
     if size > 0 and (kind == "otf" or kind == "ttf" or kind == "tcc") then
         local hash = makehash(filename,sub,instance)
         data = containers.read(cache,hash)
-        if not data or data.time ~= time or data.size  ~= size then
+        if not data or data.size  ~= size then
             data = otf.readers.loadshapes(filename,sub,instance)
             if data then
                 data.size   = size
                 data.format = data.format or (kind == "otf" and "opentype") or "truetype"
-                data.time   = time
                 packoutlines(data)
                 containers.write(cache,hash,data)
                 data = containers.read(cache,hash) -- frees old mem
@@ -188,12 +186,11 @@ local function loadoutlines(cache,filename,sub,instance)
     elseif size > 0 and (kind == "pfb") then
         local hash = containers.cleanname(base) -- including suffix
         data = containers.read(cache,hash)
-        if not data or data.time ~= time or data.size  ~= size then
+        if not data or data.size  ~= size then
             data = afm.readers.loadshapes(filename)
             if data then
                 data.size   = size
                 data.format = "type1"
-                data.time   = time
                 packoutlines(data)
                 containers.write(cache,hash,data)
                 data = containers.read(cache,hash) -- frees old mem
@@ -204,7 +201,6 @@ local function loadoutlines(cache,filename,sub,instance)
         data = {
             filename = filename,
             size     = 0,
-            time     = time,
             format   = "unknown",
             units    = 1000,
             glyphs   = { }
@@ -224,12 +220,11 @@ local function loadstreams(cache,filename,sub,instance)
     local kind = lower(file.suffix(filename))
     local attr = lfs.attributes(filename)
     local size = attr and attr.size or 0
-    local time = attr and attr.modification or 0
     local sub  = tonumber(sub)
     if size > 0 and (kind == "otf" or kind == "ttf" or kind == "ttc") then
         local hash = makehash(filename,sub,instance)
         data = containers.read(cache,hash)
-        if not data or data.time ~= time or data.size  ~= size then
+        if not data or data.size  ~= size then
             data = otf.readers.loadshapes(filename,sub,instance,true)
             if data then
                 local glyphs  = data.glyphs
@@ -248,14 +243,13 @@ local function loadstreams(cache,filename,sub,instance)
                 data.glyphs  = nil
                 data.size    = size
                 data.format  = data.format or (kind == "otf" and "opentype") or "truetype"
-                data.time    = time
                 data = cachethem(cache,hash,data)
             end
         end
     elseif size > 0 and (kind == "pfb") then
         local hash = makehash(filename,sub,instance)
         data = containers.read(cache,hash)
-        if not data or data.time ~= time or data.size  ~= size then
+        if not data or data.size  ~= size then
             local names, encoding, streams, metadata = pfb.loadvector(filename,false,true)
             if streams then
                 local fontbbox = metadata.fontbbox or { 0, 0, 0, 0 }
@@ -265,7 +259,6 @@ local function loadstreams(cache,filename,sub,instance)
                 data = {
                     filename   = filename,
                     size       = size,
-                    time       = time,
                     format     = "type1",
                     streams    = streams,
                     fontheader = {
@@ -310,7 +303,6 @@ local function loadstreams(cache,filename,sub,instance)
         data = {
             filename = filename,
             size     = 0,
-            time     = time,
             format   = "unknown",
             streams  = { }
         }

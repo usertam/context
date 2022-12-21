@@ -134,7 +134,6 @@ function otf.load(filename,sub,instance)
     local name = file.removesuffix(base) -- already no suffix
     local attr = lfs.attributes(filename)
     local size = attr and attr.size or 0
-    local time = attr and attr.modification or 0
     -- sub can be number of string
     if sub == "" then
         sub = false
@@ -148,7 +147,7 @@ function otf.load(filename,sub,instance)
     end
     hash = containers.cleanname(hash)
     local data = containers.read(otf.cache,hash)
-    local reload = not data or data.size ~= size or data.time ~= time or data.tableversion ~= otfreaders.tableversion
+    local reload = not data or data.size ~= size or data.tableversion ~= otfreaders.tableversion
     if forceload then
         report_otf("forced reload of %a due to hard coded flag",filename)
         reload = true
@@ -170,15 +169,12 @@ function otf.load(filename,sub,instance)
             if svgshapes then
                 resources.svgshapes = nil
                 if otf.svgenabled then
-                    local timestamp = os.date()
                     -- work in progress ... a bit boring to do
                     containers.write(otf.svgcache,hash, {
                         svgshapes = svgshapes,
-                        timestamp = timestamp,
                     })
                     data.properties.svg = {
                         hash      = hash,
-                        timestamp = timestamp,
                     }
                 end
                 if cleanup > 1 then
@@ -190,15 +186,12 @@ function otf.load(filename,sub,instance)
             if pngshapes then
                 resources.pngshapes = nil
                 if otf.pngenabled then
-                    local timestamp = os.date()
                     -- work in progress ... a bit boring to do
                     containers.write(otf.pngcache,hash, {
                         pngshapes = pngshapes,
-                        timestamp = timestamp,
                     })
                     data.properties.png = {
                         hash      = hash,
-                        timestamp = timestamp,
                     }
                 end
                 if cleanup > 1 then
@@ -572,14 +565,13 @@ local function checkconversion(specification)
         local name = file.removesuffix(base)
         local attr = lfs.attributes(filename)
         local size = attr and attr.size or 0
-        local time = attr and attr.modification or 0
         if size > 0 then
             local cleanname = containers.cleanname(name)
             local cachename = caches.setfirstwritablefile(cleanname,converter.cachename)
-            if not io.exists(cachename) or (time ~= lfs.attributes(cachename).modification) then
+            if not io.exists(cachename) then
                 report_otf("caching font %a in %a",filename,cachename)
                 converter.action(filename,cachename) -- todo infoonly
-                lfs.touch(cachename,time,time)
+                lfs.touch(cachename,0,0)
             end
             specification.filename = cachename
         end

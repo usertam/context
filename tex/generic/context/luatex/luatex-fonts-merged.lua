@@ -2584,9 +2584,6 @@ function lfs.isfound(name)
   return (a=="file" or a=="link") and name or nil
  end
 end
-function lfs.modification(name)
- return name and attributes(name,"modification") or nil
-end
 if sandbox then
  sandbox.redefine(lfs.isfile,"lfs.isfile")
  sandbox.redefine(lfs.isdir,"lfs.isdir")
@@ -11392,10 +11389,6 @@ directives.register("fonts.streamreader",function()
   return lower(stripstring(readstring(f,4)))
  end
 end)
-local function readlongdatetime(f)
- local a,b,c,d,e,f,g,h=readbytes(f,8)
- return 0x100000000*d+0x1000000*e+0x10000*f+0x100*g+h
-end
 local tableversion=0.004
 readers.tableversion=tableversion
 local privateoffset=fonts.constructors and fonts.constructors.privateoffset or 0xF0000
@@ -11846,8 +11839,6 @@ readers.head=function(f,fontdata)
    magic=readulong(f),
    flags=readushort(f),
    units=readushort(f),
-   created=readlongdatetime(f),
-   modified=readlongdatetime(f),
    xmin=readshort(f),
    ymin=readshort(f),
    xmax=readshort(f),
@@ -12696,11 +12687,9 @@ local function loadtables(f,specification,offset)
  local tables={}
  local basename=file.basename(specification.filename)
  local filesize=specification.filesize
- local filetime=specification.filetime
  local fontdata={ 
   filename=basename,
   filesize=filesize,
-  filetime=filetime,
   version=readstring(f,4),
   noftables=readushort(f),
   searchrange=readushort(f),
@@ -12870,7 +12859,6 @@ local function loadfontdata(specification)
  local filename=specification.filename
  local fileattr=lfs.attributes(filename)
  local filesize=fileattr and fileattr.size or 0
- local filetime=fileattr and fileattr.modification or 0
  local f=openfile(filename,true) 
  if not f then
   report("unable to open %a",filename)
@@ -12879,7 +12867,6 @@ local function loadfontdata(specification)
   closefile(f)
  else
   specification.filesize=filesize
-  specification.filetime=filetime
   local version=readstring(f,4)
   local fontdata=nil
   if version=="OTTO" or version=="true" or version=="\0\1\0\0" then
@@ -12915,7 +12902,6 @@ local function loadfontdata(specification)
      fontdata={
       filename=filename,
       filesize=filesize,
-      filetime=filetime,
       version=version,
       subfonts=subfonts,
       ttcversion=ttcversion,
@@ -13030,7 +13016,6 @@ function readers.loadfont(filename,n,instance)
    tableversion=tableversion,
    creator="context mkiv",
    size=fontdata.filesize,
-   time=fontdata.filetime,
    glyphs=fontdata.glyphs,
    descriptions=fontdata.descriptions,
    format=fontdata.format,
@@ -21397,7 +21382,6 @@ function otf.load(filename,sub,instance)
  local name=file.removesuffix(base) 
  local attr=lfs.attributes(filename)
  local size=attr and attr.size or 0
- local time=attr and attr.modification or 0
  if sub=="" then
   sub=false
  end
@@ -21410,7 +21394,7 @@ function otf.load(filename,sub,instance)
  end
  hash=containers.cleanname(hash)
  local data=containers.read(otf.cache,hash)
- local reload=not data or data.size~=size or data.time~=time or data.tableversion~=otfreaders.tableversion
+ local reload=not data or data.size~=size or data.tableversion~=otfreaders.tableversion
  if forceload then
   report_otf("forced reload of %a due to hard coded flag",filename)
   reload=true
@@ -21430,14 +21414,11 @@ function otf.load(filename,sub,instance)
    if svgshapes then
     resources.svgshapes=nil
     if otf.svgenabled then
-     local timestamp=os.date()
      containers.write(otf.svgcache,hash,{
       svgshapes=svgshapes,
-      timestamp=timestamp,
      })
      data.properties.svg={
       hash=hash,
-      timestamp=timestamp,
      }
     end
     if cleanup>1 then
@@ -21449,14 +21430,11 @@ function otf.load(filename,sub,instance)
    if pngshapes then
     resources.pngshapes=nil
     if otf.pngenabled then
-     local timestamp=os.date()
      containers.write(otf.pngcache,hash,{
       pngshapes=pngshapes,
-      timestamp=timestamp,
      })
      data.properties.png={
       hash=hash,
-      timestamp=timestamp,
      }
     end
     if cleanup>1 then
@@ -21762,14 +21740,13 @@ local function checkconversion(specification)
   local name=file.removesuffix(base)
   local attr=lfs.attributes(filename)
   local size=attr and attr.size or 0
-  local time=attr and attr.modification or 0
   if size>0 then
    local cleanname=containers.cleanname(name)
    local cachename=caches.setfirstwritablefile(cleanname,converter.cachename)
-   if not io.exists(cachename) or (time~=lfs.attributes(cachename).modification) then
+   if not io.exists(cachename) then
     report_otf("caching font %a in %a",filename,cachename)
     converter.action(filename,cachename) 
-    lfs.touch(cachename,time,time)
+    lfs.touch(cachename,0,0)
    end
    specification.filename=cachename
   end
@@ -34844,19 +34821,17 @@ local function initializesvg(tfmdata,kind,value)
  if value and otf.svgenabled then
   local svg=tfmdata.properties.svg
   local hash=svg and svg.hash
-  local timestamp=svg and svg.timestamp
   if not hash then
    return
   end
   local pdffile=containers.read(otf.pdfcache,hash)
   local pdfshapes=pdffile and pdffile.pdfshapes
-  if not pdfshapes or pdffile.timestamp~=timestamp or not next(pdfshapes) then
+  if not pdfshapes or not next(pdfshapes) then
    local svgfile=containers.read(otf.svgcache,hash)
    local svgshapes=svgfile and svgfile.svgshapes
    pdfshapes=svgshapes and otfsvg.topdf(svgshapes,tfmdata,otf.pdfcache.writable,hash) or {}
    containers.write(otf.pdfcache,hash,{
     pdfshapes=pdfshapes,
-    timestamp=timestamp,
    })
   end
   pdftovirtual(tfmdata,pdfshapes,"svg")
@@ -34930,19 +34905,17 @@ local function initializepng(tfmdata,kind,value)
  if value and otf.pngenabled then
   local png=tfmdata.properties.png
   local hash=png and png.hash
-  local timestamp=png and png.timestamp
   if not hash then
    return
   end
   local pdffile=containers.read(otf.pdfcache,hash)
   local pdfshapes=pdffile and pdffile.pdfshapes
-  if not pdfshapes or pdffile.timestamp~=timestamp then
+  if not pdfshapes then
    local pngfile=containers.read(otf.pngcache,hash)
    local pngshapes=pngfile and pngfile.pngshapes
    pdfshapes=pngshapes and otfpng.topdf(pngshapes) or {}
    containers.write(otf.pdfcache,hash,{
     pdfshapes=pdfshapes,
-    timestamp=timestamp,
    })
   end
   pdftovirtual(tfmdata,pdfshapes,"png")
@@ -35400,20 +35373,17 @@ function afm.load(filename)
   local data=containers.read(afm.cache,name)
   local attr=lfs.attributes(filename)
   local size=attr and attr.size or 0
-  local time=attr and attr.modification or 0
   local pfbfile=file.replacesuffix(name,"pfb")
   local pfbname=resolvers.findfile(pfbfile,"pfb") or ""
   if pfbname=="" then
    pfbname=resolvers.findfile(file.basename(pfbfile),"pfb") or ""
   end
   local pfbsize=0
-  local pfbtime=0
   if pfbname~="" then
    local attr=lfs.attributes(pfbname)
    pfbsize=attr.size or 0
-   pfbtime=attr.modification or 0
   end
-  if not data or data.size~=size or data.time~=time or data.pfbsize~=pfbsize or data.pfbtime~=pfbtime then
+  if not data or data.size~=size or data.pfbsize~=pfbsize then
    report_afm("reading %a",filename)
    data=afm.readers.loadfont(filename,pfbname)
    if data then
@@ -35422,9 +35392,7 @@ function afm.load(filename)
     otfreaders.stripredundant(data)
     otfreaders.pack(data)
     data.size=size
-    data.time=time
     data.pfbsize=pfbsize
-    data.pfbtime=pfbtime
     report_afm("saving %a in cache",name)
     data=containers.write(afm.cache,name,data)
     data=containers.read(afm.cache,name)
@@ -37310,17 +37278,15 @@ local function loadoutlines(cache,filename,sub,instance)
  local kind=file.suffix(filename)
  local attr=lfs.attributes(filename)
  local size=attr and attr.size or 0
- local time=attr and attr.modification or 0
  local sub=tonumber(sub)
  if size>0 and (kind=="otf" or kind=="ttf" or kind=="tcc") then
   local hash=makehash(filename,sub,instance)
   data=containers.read(cache,hash)
-  if not data or data.time~=time or data.size~=size then
+  if not data or data.size~=size then
    data=otf.readers.loadshapes(filename,sub,instance)
    if data then
     data.size=size
     data.format=data.format or (kind=="otf" and "opentype") or "truetype"
-    data.time=time
     packoutlines(data)
     containers.write(cache,hash,data)
     data=containers.read(cache,hash) 
@@ -37330,12 +37296,11 @@ local function loadoutlines(cache,filename,sub,instance)
  elseif size>0 and (kind=="pfb") then
   local hash=containers.cleanname(base) 
   data=containers.read(cache,hash)
-  if not data or data.time~=time or data.size~=size then
+  if not data or data.size~=size then
    data=afm.readers.loadshapes(filename)
    if data then
     data.size=size
     data.format="type1"
-    data.time=time
     packoutlines(data)
     containers.write(cache,hash,data)
     data=containers.read(cache,hash) 
@@ -37346,7 +37311,6 @@ local function loadoutlines(cache,filename,sub,instance)
   data={
    filename=filename,
    size=0,
-   time=time,
    format="unknown",
    units=1000,
    glyphs={}
@@ -37364,12 +37328,11 @@ local function loadstreams(cache,filename,sub,instance)
  local kind=lower(file.suffix(filename))
  local attr=lfs.attributes(filename)
  local size=attr and attr.size or 0
- local time=attr and attr.modification or 0
  local sub=tonumber(sub)
  if size>0 and (kind=="otf" or kind=="ttf" or kind=="ttc") then
   local hash=makehash(filename,sub,instance)
   data=containers.read(cache,hash)
-  if not data or data.time~=time or data.size~=size then
+  if not data or data.size~=size then
    data=otf.readers.loadshapes(filename,sub,instance,true)
    if data then
     local glyphs=data.glyphs
@@ -37388,14 +37351,13 @@ local function loadstreams(cache,filename,sub,instance)
     data.glyphs=nil
     data.size=size
     data.format=data.format or (kind=="otf" and "opentype") or "truetype"
-    data.time=time
     data=cachethem(cache,hash,data)
    end
   end
  elseif size>0 and (kind=="pfb") then
   local hash=makehash(filename,sub,instance)
   data=containers.read(cache,hash)
-  if not data or data.time~=time or data.size~=size then
+  if not data or data.size~=size then
    local names,encoding,streams,metadata=pfb.loadvector(filename,false,true)
    if streams then
     local fontbbox=metadata.fontbbox or { 0,0,0,0 }
@@ -37405,7 +37367,6 @@ local function loadstreams(cache,filename,sub,instance)
     data={
      filename=filename,
      size=size,
-     time=time,
      format="type1",
      streams=streams,
      fontheader={
@@ -37450,7 +37411,6 @@ local function loadstreams(cache,filename,sub,instance)
   data={
    filename=filename,
    size=0,
-   time=time,
    format="unknown",
    streams={}
   }

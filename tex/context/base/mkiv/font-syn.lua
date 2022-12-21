@@ -26,7 +26,7 @@ local formatters, topattern = string.formatters, string.topattern
 local round = math.round
 local P, R, S, C, Cc, Ct, Cs = lpeg.P, lpeg.R, lpeg.S, lpeg.C, lpeg.Cc, lpeg.Ct, lpeg.Cs
 local lpegmatch, lpegpatterns = lpeg.match, lpeg.patterns
-local isfile, modificationtime = lfs.isfile, lfs.modification
+local isfile = lfs.isfile
 
 local allocate             = utilities.storage.allocate
 local sparse               = utilities.storage.sparse
@@ -552,7 +552,7 @@ names.cleanfilename = cleanfilename
 -- end
 
 
-local function check_name(data,result,filename,modification,suffix,subfont)
+local function check_name(data,result,filename,suffix,subfont)
     -- shortcuts
     local specifications = data.specifications
     -- fetch
@@ -646,7 +646,6 @@ local function check_name(data,result,filename,modification,suffix,subfont)
         minsize        = minsize      ~=    0 and minsize      or nil,
         maxsize        = maxsize      ~=    0 and maxsize      or nil,
         designsize     = designsize   ~=    0 and designsize   or nil,
-        modification   = modification ~=    0 and modification or nil,
         instancenames  = instancenames or nil,
     }
 end
@@ -1097,23 +1096,17 @@ local function analyzefiles(olddata)
             end
             -- needs checking with ttc / ttx : date not updated ?
             local result = nil
-            local modification = modificationtime(completename)
-            if olddata and modification and modification > 0 then
+            if olddata then
                 local oldindex = oldindices[storedname] -- index into specifications
                 if oldindex then
                     local oldspecification = oldspecifications[oldindex]
                     if oldspecification and oldspecification.filename == storedname then -- double check for out of sync
-                        local oldmodification = oldspecification.modification
-                        if oldmodification == modification then
-                            result = oldspecification
-                            specifications[#specifications + 1] = result
-                        else
-                            -- ??
-                        end
+                        result = oldspecification
+                        specifications[#specifications + 1] = result
                     else
                          -- ??
                     end
-                elseif oldrejected[storedname] == modification then
+                else
                     result = false
                 end
             end
@@ -1123,10 +1116,10 @@ local function analyzefiles(olddata)
                 if result then
                     if #result > 0 then
                         for r=1,#result do
-                            check_name(data,result[r],storedname,modification,suffix,r) -- subfonts start at zero
+                            check_name(data,result[r],storedname,suffix,r) -- subfonts start at zero
                         end
                     else
-                        check_name(data,result,storedname,modification,suffix)
+                        check_name(data,result,storedname,suffix)
                     end
                     if trace_warnings and message and message ~= "" then
                         report_names("warning when identifying %s font %a, %s",suffix,completename,message)
@@ -1240,7 +1233,7 @@ local function rejectclashes() -- just to be sure, so no explicit afm will be fo
                 if trace_warnings then
                     report_names("fontname %a clashes, %a rejected in favor of %a",f,fnm,fnd)
                 end
-                rejected[f] = s.modification
+                rejected[f] = nil
             else
                 used[f] = fnm
                 o = o + 1

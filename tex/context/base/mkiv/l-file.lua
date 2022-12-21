@@ -95,10 +95,6 @@ function lfs.isfound(name)
     end
 end
 
-function lfs.modification(name)
-    return name and attributes(name,"modification") or nil
-end
-
 if sandbox then
     sandbox.redefine(lfs.isfile,"lfs.isfile")
     sandbox.redefine(lfs.isdir, "lfs.isdir")

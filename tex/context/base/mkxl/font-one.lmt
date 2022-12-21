@@ -88,7 +88,6 @@ function afm.load(filename)
         local data = containers.read(afm.cache,name)
         local attr = lfs.attributes(filename)
         local size = attr and attr.size or 0
-        local time = attr and attr.modification or 0
         --
         local pfbfile = file.replacesuffix(name,"pfb")
         local pfbname = resolvers.findfile(pfbfile,"pfb") or ""
@@ -96,13 +95,11 @@ function afm.load(filename)
             pfbname = resolvers.findfile(file.basename(pfbfile),"pfb") or ""
         end
         local pfbsize = 0
-        local pfbtime = 0
         if pfbname ~= "" then
             local attr = lfs.attributes(pfbname)
             pfbsize = attr.size or 0
-            pfbtime = attr.modification or 0
         end
-        if not data or data.size ~= size or data.time ~= time or data.pfbsize ~= pfbsize or data.pfbtime ~= pfbtime then
+        if not data or data.size ~= size or data.pfbsize ~= pfbsize then
             report_afm("reading %a",filename)
             data = afm.readers.loadfont(filename,pfbname)
             if data then
@@ -113,9 +110,7 @@ function afm.load(filename)
              -- otfreaders.extend(data)
                 otfreaders.pack(data)
                 data.size = size
-                data.time = time
                 data.pfbsize = pfbsize
-                data.pfbtime = pfbtime
                 report_afm("saving %a in cache",name)
              -- data.resources.unicodes = nil -- consistent with otf but here we save not much
                 data = containers.write(afm.cache, name, data)
