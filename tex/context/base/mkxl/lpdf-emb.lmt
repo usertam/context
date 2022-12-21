@@ -311,22 +311,8 @@ end
 
     -- Actually we can use the same as we only embed once.
 
-    -- subsetname = function(name)
-    --     return "CONTEXT" .. name
-    -- end
-
-    local prefixes = { } -- todo: set fixed one
-
     subsetname = function(name)
-        local prefix
-        while true do
-            prefix = utfchar(random(65,90),random(65,90),random(65,90),random(65,90),random(65,90),random(65,90))
-            if not prefixes[prefix] then
-                prefixes[prefix] = true
-                break
-            end
-        end
-        return prefix .. "+" .. name
+        return name
     end
 
 end
