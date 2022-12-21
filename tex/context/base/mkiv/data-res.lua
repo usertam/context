@@ -732,10 +732,6 @@ end
 -- we used to have 'files' and 'configurations' so therefore the following
 -- shared function
 
-function resolvers.datastate()
-    return caches.contentstate()
-end
-
 variable = function(name)
     local variables = instance.variables
     local name   = name and lpegmatch(dollarstripper,name)

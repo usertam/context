@@ -156,9 +156,7 @@ function fonts.names.statistics()
         return table.sequenced(n)
     end
 
-    report("cache uuid      : %s", data.cache_uuid)
     report("cache version   : %s", data.cache_version)
-    report("number of trees : %s", #data.datastate)
     report()
     report("number of fonts : %s", statistics.fonts or 0)
     report("used files      : %s", statistics.readfiles or 0)

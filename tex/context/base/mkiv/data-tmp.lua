@@ -376,7 +376,6 @@ local saveoptions = { compact = true, accurate = not JITSUPPORTED }
 
 function caches.savedata(filepath,filename,data,fast)
     local tmaname, tmcname = setluanames(filepath,filename)
-    data.cache_uuid = osuuid()
     if fast or fast_cache then
         savedata(tmaname,fastserialize(data,true))
     elseif direct_cache then
@@ -388,12 +387,6 @@ function caches.savedata(filepath,filename,data,fast)
 end
 
 -- moved from data-res:
-
-local content_state = { }
-
-function caches.contentstate()
-    return content_state or { }
-end
 
 function caches.loadcontent(cachename,dataname,filename)
     if not filename then
@@ -410,7 +403,6 @@ function caches.loadcontent(cachename,dataname,filename)
         if data and data.content then
             if data.type == dataname then
                 if data.version == resolvers.cacheversion then
-                    content_state[#content_state+1] = data.uuid
                     if trace_locating then
                         report_resolvers("loading %a for %a from %a",dataname,cachename,filename)
                     end
@@ -452,10 +444,7 @@ function caches.savecontent(cachename,dataname,content,filename)
         type    = dataname,
         root    = cachename,
         version = resolvers.cacheversion,
-        date    = osdate("%Y-%m-%d"),
-        time    = osdate("%H:%M:%S"),
         content = content,
-        uuid    = osuuid(),
     }
     local ok = savedata(luaname,serialize(data,true))
     if ok then

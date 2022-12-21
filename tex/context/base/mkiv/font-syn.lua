@@ -1269,7 +1269,6 @@ local function resetdata()
         names          = { },
         indices        = { },
         rejected       = { },
-        datastate      = resolvers.datastate(),
     }
 end
 
@@ -1375,16 +1374,7 @@ local function is_reloaded()
     if not reloaded then
         local data = names.data
         if autoreload then
-            local c_status = serialize(resolvers.datastate())
-            local f_status = serialize(data.datastate)
-            if c_status == f_status then
-                if trace_names then
-                    report_names("font database has matching configuration and file hashes")
-                end
-                return
-            else
-                report_names("font database has mismatching configuration and file hashes")
-            end
+            return
         else
             report_names("font database is regenerated (controlled by directive 'fonts.autoreload')")
         end

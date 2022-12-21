@@ -168,7 +168,6 @@ do
     }
 
     data.original = {
-        cache_uuid     =  t_string,
         cache_version  =  t_float,
         compacted      =  t_boolean,
         creator        =  t_string,
