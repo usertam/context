@@ -262,17 +262,10 @@ local function flushxmpinfo()
     commands.pushrandomseed()
     commands.setrandomseed(os.time())
 
-    local documentid = "no unique document id here"
-    local instanceid = "no unique instance id here"
     local metadata   = pdfgetmetadata()
     local time       = metadata.time
     local producer   = metadata.producer
     local creator    = metadata.creator
-
-    if included.id ~= "fake" then
-        documentid = "uuid:" .. os.uuid()
-        instanceid = "uuid:" .. os.uuid()
-    end
 
     pdfaddtoinfo("Producer",producer)
     pdfaddtoinfo("Creator",creator)
@@ -281,8 +274,8 @@ local function flushxmpinfo()
 
     if add_xmp_blob then
 
-        pdfaddxmpinfo("DocumentID",documentid)
-        pdfaddxmpinfo("InstanceID",instanceid)
+        pdfaddxmpinfo("DocumentID","")
+        pdfaddxmpinfo("InstanceID","")
         pdfaddxmpinfo("Producer",producer)
         pdfaddxmpinfo("CreatorTool",creator)
         pdfaddxmpinfo("CreateDate",time)

@@ -119,8 +119,6 @@ local function pdfgetmetadata()
         local luatexversion       = format("%1.2f",LUATEXVERSION)
         local luatexfunctionality = tostring(LUATEXFUNCTIONALITY)
         local jobname             = environment.jobname or tex.jobname or "unknown"
-        local documentid          = trailerid and ("uuid:" .. osuuid()) or "no unique document id here"
-        local instanceid          = trailerid and ("uuid:" .. osuuid()) or "no unique instance id here"
         metadata = creationdate and {
             producer            = format("LuaMetaTeX-%s",luatexversion),
             creator             = format("LuaMetaTeX %s %s + ConTeXt LMTX %s",luatexversion,luatexfunctionality,contextversion),
@@ -132,15 +130,11 @@ local function pdfgetmetadata()
             creationdate        = creationdate,
             modificationdate    = modificationdate,
             id                  = format("%s | %s",jobname,creationdate),
-            documentid          = documentid,
-            instanceid          = instanceid,
             jobname             = jobname,
         } or {
             producer            = "LuaMetaTeX",
             creator             = "LuaMetaTeX + ConTeXt LMTX",
             id                  = jobname,
-            documentid          = documentid,
-            instanceid          = instanceid,
             jobname             = jobname,
         }
      -- inspect(metadata)
@@ -364,8 +358,6 @@ local function flushxmpinfo()
     local time       = metadata.time
     local producer   = metadata.producer
     local creator    = metadata.creator
-    local documentid = metadata.documentid
-    local instanceid = metadata.instanceid
 
     pdfaddtoinfo("Producer",producer)
     pdfaddtoinfo("Creator",creator)
@@ -374,8 +366,8 @@ local function flushxmpinfo()
 
     if add_xmp_blob then
 
-        pdfaddxmpinfo("DocumentID",documentid)
-        pdfaddxmpinfo("InstanceID",instanceid)
+        pdfaddxmpinfo("DocumentID","")
+        pdfaddxmpinfo("InstanceID","")
         pdfaddxmpinfo("Producer",producer)
         pdfaddxmpinfo("CreatorTool",creator)
         pdfaddxmpinfo("CreateDate",time)
